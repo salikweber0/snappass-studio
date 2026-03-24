@@ -32,6 +32,7 @@ const SECURITY_CONFIG = {
       'Video Editor',
     ],
     phone: '7069331761',
+    email: 'salikshaikh278@gmail.com',
     upi: 'shaikh.salik@fam',
     whatsapp: '917069331761',
     subscriptionPrice: 499,
@@ -85,120 +86,79 @@ function playWelcomeSound() {
 ══════════════════════════════════════════════ */
 async function sheetFetch(params) {
   const url = SECURITY_CONFIG.SCRIPT_URL + '?' + new URLSearchParams(params).toString();
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  } catch (err) {
-    console.error('sheetFetch error:', err);
-    throw err;   // re-throw taaki original error dikhe
-  }
+
+  // XMLHttpRequest use karo — Google Apps Script redirect ke saath better kaam karta hai
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.timeout = 15000; // 15 second timeout
+    xhr.onload = function () {
+      try {
+        resolve(JSON.parse(xhr.responseText));
+      } catch {
+        resolve({ error: 'Invalid JSON' });
+      }
+    };
+    xhr.onerror = function () { reject(new Error('Network request failed')); };
+    xhr.ontimeout = function () { reject(new Error('Request timed out')); };
+    xhr.send();
+  });
 }
 
 async function sheetPost(body) {
-  try {
-    const res = await fetch(SECURITY_CONFIG.SCRIPT_URL, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'text/plain;charset=utf-8'   // yeh important hai
-      },
-      body: JSON.stringify(body),
-    });
+  // GET use karo POST ki jagah — CORS issue fix
+  const params = { action: body.action };
+  if (body.code)     params.code     = body.code;
+  if (body.password) params.password = body.password;
+  const url = SECURITY_CONFIG.SCRIPT_URL + '?' + new URLSearchParams(params).toString();
 
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-
-    const text = await res.text();
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = { error: 'Invalid JSON response' };
-    }
-
-    return data;
-
-  } catch (err) {
-    console.error('sheetPost failed:', err);
-    // Better error message for user
-    throw new Error('Server connection failed. Please try again.');
-  }
-}
-
-/* ══════════════════════════════════════════════
-   REAL-TIME DATE (Date manipulation protection)
-   Multiple free time APIs use karta hai — ek fail ho toh doosra
-══════════════════════════════════════════════ */
-async function getRealTime() {
-  const apis = [
-    async () => {
-      const r = await fetch('https://worldtimeapi.org/api/ip', { cache: 'no-store' });
-      const d = await r.json();
-      return new Date(d.utc_datetime).getTime();
-    },
-    async () => {
-      const r = await fetch('https://timeapi.io/api/Time/current/zone?timeZone=Asia/Kolkata', { cache: 'no-store' });
-      const d = await r.json();
-      return new Date(d.dateTime).getTime();
-    },
-    async () => {
-      // Google Apps Script se time lena (already connected hai)
-      const url = SECURITY_CONFIG.SCRIPT_URL + '?action=getTime';
-      const r = await fetch(url, { cache: 'no-store' });
-      const d = await r.json();
-      return d.time ? parseInt(d.time) : null;
-    }
-  ];
-
-  for (const api of apis) {
-    try {
-      const t = await api();
-      if (t && t > 0) {
-        console.log('Real time fetched:', new Date(t).toISOString());
-        return t;
-      }
-    } catch (e) {
-      console.warn('Time API failed, trying next...', e.message);
-    }
-  }
-  // Sab fail — device time use karo (last resort)
-  console.warn('All time APIs failed, using device time');
-  return Date.now();
-}
-
-async function checkSubWithRealTime() {
-  const start  = lsGet(SEC_KEYS.SUB_START);
-  const end    = lsGet(SEC_KEYS.SUB_END);
-  const active = lsGet(SEC_KEYS.SUB_ACTIVE);
-
-  if (!start || !end || active !== 'yes') return false;
-
-  try {
-    const realNow = await getRealTime();
-    const endMs   = parseInt(end);
-    const isValid = realNow < endMs;
-
-    if (!isValid) {
-      // Subscription expired — locally bhi mark karo
-      lsSet(SEC_KEYS.SUB_ACTIVE, 'expired');
-      console.warn('Subscription expired (real time check)');
-    }
-    return isValid;
-  } catch {
-    // Time check fail — local time se fallback
-    return Date.now() < parseInt(end);
-  }
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.timeout = 15000;
+    xhr.onload = function () {
+      try { resolve(JSON.parse(xhr.responseText)); }
+      catch { resolve({ success: true }); }
+    };
+    // Fail hone pe bhi success return karo — local login karne denge
+    xhr.onerror   = function () { resolve({ success: true, offline: true }); };
+    xhr.ontimeout = function () { resolve({ success: true, offline: true }); };
+    xhr.send();
+  });
 }
 
 /* ══════════════════════════════════════════════
    SUBSCRIPTION HELPERS
 ══════════════════════════════════════════════ */
-function getSubInfo() {
+
+/**
+ * Internet se real time fetch karo.
+ * Multiple APIs try karta hai fallback ke saath.
+ * Returns timestamp (ms) ya null agar offline.
+ */
+async function fetchInternetTime() {
+  const APIS = [
+    { url: 'https://worldtimeapi.org/api/ip', parse: d => new Date(d.utc_datetime).getTime() },
+    { url: 'https://timeapi.io/api/time/current/zone?timeZone=UTC', parse: d => new Date(d.dateTime).getTime() },
+  ];
+
+  for (const api of APIS) {
+    try {
+      const res = await fetch(api.url, { cache: 'no-store' });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const t = api.parse(data);
+      if (t && !isNaN(t)) return t;
+    } catch (_) { /* next try */ }
+  }
+  return null; // offline ya APIs down
+}
+
+function getSubInfo(nowOverride) {
   const start  = lsGet(SEC_KEYS.SUB_START);
   const end    = lsGet(SEC_KEYS.SUB_END);
   const active = lsGet(SEC_KEYS.SUB_ACTIVE);
-  const now    = Date.now();
+  const now    = nowOverride !== undefined ? nowOverride : Date.now();
 
   if (!start || !end || active !== 'yes') {
     return { isActive: false, daysLeft: 0, startDate: null, endDate: null, everHadSub: !!start };
@@ -218,6 +178,63 @@ function activateSubscriptionLocally() {
   lsSet(SEC_KEYS.SUB_START,  now);
   lsSet(SEC_KEYS.SUB_END,    subEnd);
   lsSet(SEC_KEYS.SUB_ACTIVE, 'yes');
+}
+
+/**
+ * Internet time se subscription verify karo.
+ * Agar user ne date peeche kar di ya subscription expire ho gayi
+ * toh upload block ho jaata hai.
+ * Agar internet nahi hai toh local time se check karta hai (fallback).
+ */
+async function verifyTimeAndEnforce() {
+  const internetTime = await fetchInternetTime();
+
+  if (internetTime === null) {
+    // Offline — upload block karo jab tak internet nahi milta
+    // Subscription ke baare mein kuch confirm nahi kar sakte offline mein
+    console.warn('[SnapPass] Could not fetch internet time. Blocking uploads until connectivity restored.');
+    blockImageUpload();
+    showOfflineBanner();
+    return;
+  }
+
+  const localTime = Date.now();
+  const diffMs    = localTime - internetTime;
+
+  // Agar local time internet se 2 min se zyada PEECHE hai
+  // = user ne device time peeche set kiya — subscription expire karo + hard block
+  if (diffMs < -(2 * 60 * 1000)) {
+    // Time tamper detected — subscription end karo immediately
+    lsSet(SEC_KEYS.SUB_END,    internetTime); // end date = abhi (internet time)
+    lsSet(SEC_KEYS.SUB_ACTIVE, 'no');
+    blockImageUpload();
+    showTamperedBanner();
+    refreshSubStatusUI();
+    return;
+  }
+
+  // Normal case — internet time se subscription check karo (local time ignored)
+  enforceSubscription(internetTime);
+}
+
+function showOfflineBanner() {
+  if (document.getElementById('sub-offline-banner')) return;
+  const b = document.createElement('div');
+  b.id = 'sub-offline-banner';
+  b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:300;background:linear-gradient(90deg,rgba(234,179,8,.98),rgba(161,98,7,.98));padding:10px 20px;text-align:center;font-size:.83rem;color:white;font-weight:600;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;';
+  b.innerHTML = `⚠️ Internet connection required to verify subscription. Connect to internet and reload.
+    <button style="padding:4px 12px;background:white;color:#b45309;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:.77rem;" onclick="location.reload()">Reload</button>`;
+  document.body.prepend(b);
+}
+
+function showTamperedBanner() {
+  if (document.getElementById('sub-tampered-banner')) return;
+  const b = document.createElement('div');
+  b.id = 'sub-tampered-banner';
+  b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:300;background:linear-gradient(90deg,rgba(239,68,68,.98),rgba(153,27,27,.98));padding:10px 20px;text-align:center;font-size:.83rem;color:white;font-weight:600;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;';
+  b.innerHTML = `🚫 Device time manipulation detected. Subscription has been terminated. Set device time to automatic and contact developer.
+    <button style="padding:4px 12px;background:white;color:#dc2626;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-size:.77rem;" onclick="location.reload()">Reload</button>`;
+  document.body.prepend(b);
 }
 
 /* ══════════════════════════════════════════════
@@ -351,7 +368,6 @@ function injectSecurityPanels() {
       <div id="sec-login-err" class="sec-error hidden"></div>
       <button id="sec-login-btn" class="sec-btn-primary">
         <span id="sec-login-btn-text">Login →</span>
-        <span id="sec-login-spinner" class="sec-spinner hidden"></span>
       </button>
       <p class="sec-hint">Contact developer to get your Access Code</p>
     </div>
@@ -405,6 +421,14 @@ function injectSecurityPanels() {
             <a href="tel:+91${d.phone}" class="dev-action-btn">
               <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.63A2 2 0 012 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14.92z"/></svg>
               Dial
+            </a>
+          </div>
+          <div class="dev-info-row">
+            <span class="dev-info-icon">✉️</span>
+            <span class="dev-info-text" style="font-size:.78rem;word-break:break-all;">${d.email}</span>
+            <a href="mailto:${d.email}" class="dev-action-btn">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              Mail
             </a>
           </div>
           <div class="dev-info-row">
@@ -494,7 +518,8 @@ function afterLoginSetup() {
   injectDevButton();
   setupDevPanel();
   refreshSubStatusUI();
-  enforceSubscription();
+  // Internet time se verify karo — async, background mein chalega
+  verifyTimeAndEnforce();
 }
 
 /* ══════════════════════════════════════════════
@@ -532,23 +557,29 @@ function setupLoginPanel() {
     if (!code || !pw) { showSecError(errEl, 'Please fill in both fields'); return; }
     if (pw.length < 4) { showSecError(errEl, 'Password must be at least 4 characters'); return; }
 
-    setSecLoading(btn, 'sec-login-btn-text', 'sec-login-spinner', true);
+    // Button disable karo, text change karo (no spinner)
+    btn.disabled = true;
+    const btnTextEl = document.getElementById('sec-login-btn-text');
+    if (btnTextEl) btnTextEl.textContent = 'Checking...';
 
     try {
       const data = await sheetFetch({ action: 'checkCode', code });
 
       if (!data.found) {
         showSecError(errEl, 'Invalid Access Code. Please check and try again.');
-        setSecLoading(btn, 'sec-login-btn-text', 'sec-login-spinner', false);
+        btn.disabled = false;
+        if (btnTextEl) btnTextEl.textContent = 'Login →';
         return;
       }
       if (data.status && data.status.toLowerCase() === 'active') {
         showSecError(errEl, 'This Access Code is already in use. Contact the developer.');
-        setSecLoading(btn, 'sec-login-btn-text', 'sec-login-spinner', false);
+        btn.disabled = false;
+        if (btnTextEl) btnTextEl.textContent = 'Login →';
         return;
       }
 
-      // Save to sheet: password + Status=Active + Payment=Active
+      // Activate karo sheet mein (fail hone pe bhi login chalega)
+      if (btnTextEl) btnTextEl.textContent = 'Activating...';
       await sheetPost({ action: 'activate', code, password: pw });
 
       lsSet(SEC_KEYS.PASSWORD,    pw);
@@ -560,8 +591,9 @@ function setupLoginPanel() {
       afterLoginSetup();
 
     } catch {
-      showSecError(errEl, 'Connection error. Check your internet and try again.');
-      setSecLoading(btn, 'sec-login-btn-text', 'sec-login-spinner', false);
+      showSecError(errEl, 'Invalid Access Code ya network problem. Dobara try karo.');
+      btn.disabled = false;
+      if (btnTextEl) btnTextEl.textContent = 'Login →';
     }
   };
 
@@ -618,8 +650,10 @@ function showSecError(el, msg) {
 }
 function setSecLoading(btn, tId, sId, on) {
   btn.disabled = on;
-  document.getElementById(tId).classList.toggle('hidden', on);
-  document.getElementById(sId).classList.toggle('hidden', !on);
+  const tEl = document.getElementById(tId);
+  const sEl = document.getElementById(sId);
+  if (tEl) tEl.classList.toggle('hidden', on);
+  if (sEl) sEl.classList.toggle('hidden', !on);
 }
 
 /* ══════════════════════════════════════════════
@@ -663,63 +697,45 @@ function refreshSubStatusUI() {
 }
 
 /* ══════════════════════════════════════════════
-   ENFORCE SUBSCRIPTION (Real-time date check)
+   ENFORCE SUBSCRIPTION
 ══════════════════════════════════════════════ */
-async function enforceSubscription() {
-  const info = getSubInfo();
-
-  // Pehle local check — agar already expired hai toh seedha block
+function enforceSubscription(nowOverride) {
+  const info = getSubInfo(nowOverride);
   if (!info.isActive && info.everHadSub) {
     blockImageUpload();
     showExpiredBanner();
-    return;
   }
-
-  // Agar locally active hai — real time se verify karo (date manipulation catch)
+  // Agar active hai toh banner remove karo (renewal ke baad)
   if (info.isActive) {
-    try {
-      const reallyActive = await checkSubWithRealTime();
-      if (!reallyActive) {
-        blockImageUpload();
-        showExpiredBanner();
-        if (typeof showToast === 'function')
-          showToast('⚠️ Subscription expired. Date change detect hui.', 'error');
-      }
-    } catch {
-      // Time API fail — locally active hai toh allow karo
-    }
+    removeExpiredBanner();
+    const fi = document.getElementById('file-input');
+    if (fi) fi.disabled = false;
+    // Remove drop zone block flag on renewal
+    const dz = document.getElementById('drop-zone');
+    if (dz) delete dz.dataset.subBlocked;
   }
 }
 
 function blockImageUpload() {
   const fi = document.getElementById('file-input');
   const dz = document.getElementById('drop-zone');
-
+  const msg = () => {
+    if (typeof showToast === 'function') showToast('Subscription expired. Renew to upload photos.', 'error');
+    if (typeof openDevPanel === 'function') setTimeout(openDevPanel, 300);
+  };
   if (fi) fi.disabled = true;
 
-  // Drop zone pe overlay lagao
-  if (dz && !document.getElementById('upload-block-overlay')) {
-    dz.style.position = 'relative';
-    const overlay = document.createElement('div');
-    overlay.id = 'upload-block-overlay';
-    overlay.style.cssText = `
-      position:absolute;inset:0;z-index:10;border-radius:24px;
-      background:rgba(10,10,15,0.82);backdrop-filter:blur(6px);
-      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
-      cursor:not-allowed;
-    `;
-    overlay.innerHTML = \`
-      <span style="font-size:2.2rem">🔒</span>
-      <p style="color:#fca5a5;font-weight:700;font-size:1rem;font-family:'Syne',sans-serif;">Subscription Expired</p>
-      <p style="color:rgba(255,255,255,.5);font-size:.8rem;text-align:center;padding:0 20px;">Renew your subscription to upload photos</p>
-      <button onclick="openDevPanel()" style="margin-top:6px;padding:8px 20px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:white;font-weight:700;cursor:pointer;font-size:.85rem;">Renew Now</button>
-    \`;
-    dz.appendChild(overlay);
-  }
-
-  const msg = () => { if (typeof showToast === 'function') showToast('🔒 Subscription expired. Renew to upload photos.', 'error'); };
-  if (dz) {
+  // Mark drop zone as blocked using a data attribute flag
+  if (dz && !dz.dataset.subBlocked) {
+    dz.dataset.subBlocked = 'true';
     dz.addEventListener('drop',  e => { e.preventDefault(); e.stopPropagation(); msg(); }, true);
+    dz.addEventListener('click', e => {
+      // Allow clicks on child elements only if not blocked
+      if (dz.dataset.subBlocked === 'true') {
+        e.preventDefault(); e.stopPropagation(); msg();
+      }
+    }, true);
+    dz.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); }, true);
   }
 }
 
