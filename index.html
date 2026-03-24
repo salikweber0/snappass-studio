@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- ══ PRIMARY SEO ══ -->
+    <title>SnapPass · Professional Passport Photo Studio</title>
+    <meta name="description" content="SnapPass — Create professional passport photos instantly. Remove background, adjust size, download print-ready A4 sheets. Fast, private & free to try." />
+    <meta name="keywords" content="passport photo, passport size photo, photo studio, background remove, id photo, visa photo, passport photo maker, photo print, SnapPass" />
+    <meta name="author" content="Shaikh Salik" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#6366f1" />
+    <link rel="canonical" href="https://snappass.app/" />
+
+    <!-- ══ OPEN GRAPH (WhatsApp, Facebook, Telegram link preview) ══ -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://snappass.app/" />
+    <meta property="og:title" content="SnapPass · Passport Photo Studio 📸" />
+    <meta property="og:description" content="✨ Professional passport photos in seconds! Remove background, resize & download print-ready sheets. Try SnapPass — fast, private & beautiful." />
+    <meta property="og:image" content="https://snappass.app/og-preview.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="SnapPass" />
+    <meta property="og:locale" content="en_IN" />
+
+    <!-- ══ TWITTER CARD ══ -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="SnapPass · Passport Photo Studio 📸" />
+    <meta name="twitter:description" content="✨ Professional passport photos in seconds! Remove background, resize & download print-ready sheets." />
+    <meta name="twitter:image" content="https://snappass.app/og-preview.png" />
+
+    <!-- ══ PWA / MOBILE ══ -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="SnapPass" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="SnapPass" />
+
+    <!-- ══ STRUCTURED DATA (Google Rich Results) ══ -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "SnapPass",
+      "description": "Professional passport photo studio — remove background, resize and download print-ready A4 sheets instantly.",
+      "url": "https://snappass.app/",
+      "applicationCategory": "PhotoApplication",
+      "operatingSystem": "Any",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "INR"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "Shaikh Salik"
+      }
+    }
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        display: ['Syne', 'sans-serif'],
+                        body: ['DM Sans', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body class="font-body bg-[#0a0a0f] text-white overflow-x-hidden">
+
+    <!-- ════════════════════════════════════════════
+       WELCOME SCREEN
+  ════════════════════════════════════════════ -->
+    <div id="welcome-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center">
+        <div class="welcome-bg"></div>
+        <div class="welcome-orb orb-1"></div>
+        <div class="welcome-orb orb-2"></div>
+        <div class="welcome-orb orb-3"></div>
+
+        <div id="welcome-content" class="relative z-10 text-center px-6">
+            <div id="logo-mark" class="mx-auto mb-6 welcome-logo">
+                <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+                    <rect width="72" height="72" rx="20" fill="url(#logoGrad)" />
+                    <rect x="18" y="14" width="36" height="44" rx="4" fill="white" fill-opacity="0.15" />
+                    <rect x="22" y="18" width="28" height="36" rx="3" fill="white" fill-opacity="0.9" />
+                    <circle cx="36" cy="30" r="7" fill="url(#logoGrad2)" />
+                    <path d="M24 50c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke="url(#logoGrad2)" stroke-width="2.5"
+                        stroke-linecap="round" />
+                    <defs>
+                        <linearGradient id="logoGrad" x1="0" y1="0" x2="72" y2="72">
+                            <stop offset="0%" stop-color="#6366f1" />
+                            <stop offset="100%" stop-color="#8b5cf6" />
+                        </linearGradient>
+                        <linearGradient id="logoGrad2" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#6366f1" />
+                            <stop offset="100%" stop-color="#a78bfa" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+            <h1 id="welcome-title" class="font-display text-5xl sm:text-7xl font-800 tracking-tight mb-3">
+                <span class="text-gradient">Snap</span><span class="text-white">Pass</span>
+            </h1>
+            <p id="welcome-sub" class="text-white/50 text-lg sm:text-xl font-light mb-10 tracking-wide">Passport Photo
+                Studio · Professional Quality</p>
+            <button id="enter-btn"
+                class="enter-btn font-display font-semibold text-lg px-10 py-4 rounded-2xl relative overflow-hidden">
+                <span class="relative z-10">Begin →</span>
+            </button>
+            <p class="mt-6 text-white/25 text-sm">Free · No signup · Private</p>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+       MAIN APP
+  ════════════════════════════════════════════ -->
+    <div id="app" class="hidden min-h-screen">
+
+        <!-- Header -->
+        <header class="app-header sticky top-0 z-40 px-6 py-4">
+            <div class="max-w-7xl mx-auto flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <svg width="36" height="36" viewBox="0 0 72 72" fill="none">
+                        <rect width="72" height="72" rx="20" fill="url(#hLogoGrad)" />
+                        <rect x="22" y="18" width="28" height="36" rx="3" fill="white" fill-opacity="0.9" />
+                        <circle cx="36" cy="30" r="7" fill="url(#hLogoGrad2)" />
+                        <path d="M24 50c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke="url(#hLogoGrad2)"
+                            stroke-width="2.5" stroke-linecap="round" />
+                        <defs>
+                            <linearGradient id="hLogoGrad" x1="0" y1="0" x2="72" y2="72">
+                                <stop offset="0%" stop-color="#6366f1" />
+                                <stop offset="100%" stop-color="#8b5cf6" />
+                            </linearGradient>
+                            <linearGradient id="hLogoGrad2" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#6366f1" />
+                                <stop offset="100%" stop-color="#a78bfa" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span class="font-display font-700 text-xl"><span class="text-gradient">Snap</span>Pass</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button id="history-btn"
+                        class="glass-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white/80 hover:text-white transition-all">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        History
+                    </button>
+                    <button id="new-photo-btn" class="hidden accent-btn px-4 py-2 rounded-xl text-sm font-semibold">+
+                        New Photo</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Upload Zone -->
+        <section id="upload-section" class="min-h-[calc(100vh-80px)] flex items-center justify-center px-6 py-16">
+            <div class="w-full max-w-2xl">
+                <div class="text-center mb-10">
+                    <h2 class="font-display text-4xl sm:text-5xl font-800 mb-3">Create Your<br /><span
+                            class="text-gradient">Passport Photo</span></h2>
+                    <p class="text-white/40 text-lg">Upload a photo · Remove background · Download print-ready</p>
+                </div>
+                <div id="drop-zone"
+                    class="drop-zone rounded-3xl p-12 text-center cursor-pointer group relative overflow-hidden">
+                    <div class="drop-zone-bg"></div>
+                    <div class="relative z-10">
+                        <div
+                            class="mx-auto mb-5 upload-icon-wrap w-20 h-20 rounded-2xl flex items-center justify-center">
+                            <svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5"
+                                viewBox="0 0 24 24" class="text-indigo-400">
+                                <path
+                                    d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                            </svg>
+                        </div>
+                        <p class="font-display text-xl font-600 mb-2 text-white/90">Drop your photo here</p>
+                        <p class="text-white/40 mb-6 text-sm">or click to browse · JPG, PNG, WEBP supported</p>
+                        <label
+                            class="accent-btn inline-block px-6 py-3 rounded-xl font-semibold cursor-pointer text-sm">
+                            Choose Photo
+                            <input type="file" id="file-input" accept="image/*" class="hidden" />
+                        </label>
+                    </div>
+                </div>
+                <!-- Tips -->
+                <div class="mt-8 grid grid-cols-3 gap-4">
+                    <div class="tip-card rounded-2xl p-4 text-center">
+                        <div class="text-2xl mb-2">🌟</div>
+                        <p class="text-white/60 text-xs">Plain background works best</p>
+                    </div>
+                    <div class="tip-card rounded-2xl p-4 text-center">
+                        <div class="text-2xl mb-2">💡</div>
+                        <p class="text-white/60 text-xs">Good lighting, face visible</p>
+                    </div>
+                    <div class="tip-card rounded-2xl p-4 text-center">
+                        <div class="text-2xl mb-2">📐</div>
+                        <p class="text-white/60 text-xs">Auto-crops to 3:4 ratio</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Editor Section -->
+        <section id="editor-section" class="hidden min-h-[calc(100vh-80px)] px-4 sm:px-6 py-8">
+            <div class="max-w-7xl mx-auto">
+                <div class="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
+
+                    <!-- Left: Preview -->
+                    <div class="space-y-6">
+                        <!-- Single Preview -->
+                        <div class="glass-panel rounded-3xl p-6">
+                            <div class="flex items-center justify-between mb-5">
+                                <h3 class="font-display font-700 text-lg">Preview</h3>
+                                <div class="flex items-center gap-2">
+                                    <button id="zoom-out-btn" class="icon-btn" title="Zoom Out">−</button>
+                                    <span id="zoom-level"
+                                        class="text-xs text-white/40 font-mono w-10 text-center">100%</span>
+                                    <button id="zoom-in-btn" class="icon-btn" title="Zoom In">+</button>
+                                </div>
+                            </div>
+                            <div class="flex justify-center">
+                                <div class="relative">
+                                    <div id="preview-container" class="preview-container overflow-hidden rounded-xl"
+                                        style="width:180px;height:240px;">
+                                        <canvas id="preview-canvas" width="360" height="480"
+                                            style="width:180px;height:240px;display:block;"></canvas>
+                                    </div>
+                                    <!-- Drag overlay hint -->
+                                    <div id="drag-hint"
+                                        class="hidden absolute inset-0 bg-indigo-500/20 rounded-xl flex items-center justify-center text-xs text-indigo-300 font-medium">
+                                        Drag to position</div>
+                                </div>
+                            </div>
+                            <!-- Adjustments -->
+                            <div class="mt-5 space-y-3">
+                                <div class="flex items-center gap-3">
+                                    <label class="text-xs text-white/50 w-20 shrink-0">Brightness</label>
+                                    <input type="range" id="brightness-slider" min="0" max="200" value="100"
+                                        class="slider flex-1">
+                                    <span id="brightness-val"
+                                        class="text-xs text-white/40 font-mono w-8 text-right">100</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <label class="text-xs text-white/50 w-20 shrink-0">Contrast</label>
+                                    <input type="range" id="contrast-slider" min="0" max="200" value="100"
+                                        class="slider flex-1">
+                                    <span id="contrast-val"
+                                        class="text-xs text-white/40 font-mono w-8 text-right">100</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <label class="text-xs text-white/50 w-20 shrink-0">Saturation</label>
+                                    <input type="range" id="saturation-slider" min="0" max="200" value="100"
+                                        class="slider flex-1">
+                                    <span id="saturation-val"
+                                        class="text-xs text-white/40 font-mono w-8 text-right">100</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sheet Preview -->
+                        <div class="glass-panel rounded-3xl p-6">
+                            <div class="flex items-center justify-between mb-5">
+                                <h3 class="font-display font-700 text-lg">Print Sheet <span
+                                        class="text-white/30 text-sm font-normal">A4</span></h3>
+                                <span id="sheet-count-label"
+                                    class="text-xs text-white/40 bg-white/5 px-3 py-1 rounded-full">4 photos</span>
+                            </div>
+                            <div class="flex justify-center">
+                                <div class="sheet-preview-wrap">
+                                    <canvas id="sheet-canvas" class="sheet-canvas rounded-lg shadow-2xl"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Controls -->
+                    <div class="space-y-5">
+
+                        <!-- BG Removal Section - With Restore Button -->
+                        <div class="glass-panel rounded-3xl p-5">
+                            <h3 class="font-display font-700 mb-4">Background Removal</h3>
+                            <div class="space-y-4">
+
+                                <button id="remove-bg-btn"
+                                    class="w-full accent-btn py-3.5 rounded-2xl font-semibold text-base flex items-center justify-center gap-2">
+                                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+                                        viewBox="0 0 24 24">
+                                        <path
+                                            d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
+                                    </svg>
+                                    Remove Background with AI
+                                </button>
+
+                                <div class="flex gap-3">
+                                    <button id="restore-bg-btn"
+                                        class="flex-1 glass-btn py-3 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 hover:text-white transition-all">
+                                        <span>↺</span> Restore Original
+                                    </button>
+
+                                    <button id="white-bg-btn"
+                                        class="flex-1 glass-btn py-3 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 hover:text-white transition-all">
+                                        <span
+                                            class="w-4 h-4 rounded bg-white border border-white/30 inline-block"></span>
+                                        White Background
+                                    </button>
+                                </div>
+
+                                <div class="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
+                                    <p class="text-emerald-400 text-sm font-medium">✓ remove.bg API Connected</p>
+                                    <p class="text-white/40 text-xs mt-1">Your API is set • High quality removal</p>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- Background Color -->
+                        <div class="glass-panel rounded-3xl p-5">
+                            <h3 class="font-display font-700 mb-3">Background Color</h3>
+
+                            <!-- Category tabs -->
+                            <div class="flex gap-2 mb-3" id="color-category-tabs">
+                                <button data-cat="passport"
+                                    class="color-cat-tab active text-xs px-3 py-1.5 rounded-lg font-medium transition-all">Passport</button>
+                                <button data-cat="classic"
+                                    class="color-cat-tab text-xs px-3 py-1.5 rounded-lg font-medium transition-all">Classic</button>
+                                <button data-cat="vibrant"
+                                    class="color-cat-tab text-xs px-3 py-1.5 rounded-lg font-medium transition-all">Vibrant</button>
+                            </div>
+
+                            <!-- Passport standard colors (most common worldwide) -->
+                            <div id="cat-passport" class="color-cat-panel">
+                                <div class="grid grid-cols-5 gap-2 mb-1" id="bg-color-swatches">
+                                    <button data-color="#ffffff" class="color-swatch active" style="background:#ffffff;"
+                                        title="White (Universal)"></button>
+                                    <button data-color="#f8fafc" class="color-swatch" style="background:#f8fafc;"
+                                        title="Off White"></button>
+                                    <button data-color="#c8d8e8" class="color-swatch" style="background:#c8d8e8;"
+                                        title="Passport Blue (US/UK)"></button>
+                                    <button data-color="#a8c4e0" class="color-swatch" style="background:#a8c4e0;"
+                                        title="Sky Blue (India/UAE)"></button>
+                                    <button data-color="#b8d4f0" class="color-swatch" style="background:#b8d4f0;"
+                                        title="Light Blue (EU)"></button>
+                                    <button data-color="#e8e8e8" class="color-swatch" style="background:#e8e8e8;"
+                                        title="Light Gray"></button>
+                                    <button data-color="#d4e8d4" class="color-swatch" style="background:#d4e8d4;"
+                                        title="Light Green (Canada)"></button>
+                                    <button data-color="#f0e8d0" class="color-swatch" style="background:#f0e8d0;"
+                                        title="Cream"></button>
+                                    <button data-color="#e0d0c8" class="color-swatch" style="background:#e0d0c8;"
+                                        title="Beige"></button>
+                                    <button data-color="#000000" class="color-swatch"
+                                        style="background:#000000;border:2px solid rgba(255,255,255,0.2);"
+                                        title="Black"></button>
+                                </div>
+                            </div>
+
+                            <!-- Classic neutral tones -->
+                            <div id="cat-classic" class="color-cat-panel hidden">
+                                <div class="grid grid-cols-5 gap-2 mb-1" id="bg-color-swatches-classic">
+                                    <button data-color="#fafafa" class="color-swatch" style="background:#fafafa;"
+                                        title="Pure White"></button>
+                                    <button data-color="#f5f5f5" class="color-swatch" style="background:#f5f5f5;"
+                                        title="Snow"></button>
+                                    <button data-color="#eeeeee" class="color-swatch" style="background:#eeeeee;"
+                                        title="Light Silver"></button>
+                                    <button data-color="#e0e0e0" class="color-swatch" style="background:#e0e0e0;"
+                                        title="Silver"></button>
+                                    <button data-color="#bdbdbd" class="color-swatch" style="background:#bdbdbd;"
+                                        title="Medium Gray"></button>
+                                    <button data-color="#fff8e1" class="color-swatch" style="background:#fff8e1;"
+                                        title="Warm White"></button>
+                                    <button data-color="#fce4ec" class="color-swatch" style="background:#fce4ec;"
+                                        title="Rose White"></button>
+                                    <button data-color="#f3e5f5" class="color-swatch" style="background:#f3e5f5;"
+                                        title="Lavender White"></button>
+                                    <button data-color="#e8f5e9" class="color-swatch" style="background:#e8f5e9;"
+                                        title="Mint White"></button>
+                                    <button data-color="#e3f2fd" class="color-swatch" style="background:#e3f2fd;"
+                                        title="Ice Blue"></button>
+                                </div>
+                            </div>
+
+                            <!-- Vibrant colors -->
+                            <div id="cat-vibrant" class="color-cat-panel hidden">
+                                <div class="grid grid-cols-5 gap-2 mb-1" id="bg-color-swatches-vibrant">
+                                    <button data-color="#2196f3" class="color-swatch" style="background:#2196f3;"
+                                        title="Blue"></button>
+                                    <button data-color="#03a9f4" class="color-swatch" style="background:#03a9f4;"
+                                        title="Sky Blue"></button>
+                                    <button data-color="#4caf50" class="color-swatch" style="background:#4caf50;"
+                                        title="Green"></button>
+                                    <button data-color="#ff9800" class="color-swatch" style="background:#ff9800;"
+                                        title="Orange"></button>
+                                    <button data-color="#f44336" class="color-swatch" style="background:#f44336;"
+                                        title="Red"></button>
+                                    <button data-color="#9c27b0" class="color-swatch" style="background:#9c27b0;"
+                                        title="Purple"></button>
+                                    <button data-color="#e91e63" class="color-swatch" style="background:#e91e63;"
+                                        title="Pink"></button>
+                                    <button data-color="#009688" class="color-swatch" style="background:#009688;"
+                                        title="Teal"></button>
+                                    <button data-color="#ff5722" class="color-swatch" style="background:#ff5722;"
+                                        title="Deep Orange"></button>
+                                    <button data-color="#607d8b" class="color-swatch" style="background:#607d8b;"
+                                        title="Blue Gray"></button>
+                                </div>
+                            </div>
+
+                            <!-- Custom picker -->
+                            <div class="flex items-center gap-3 mt-3 pt-3 border-t border-white/8">
+                                <label class="text-xs text-white/50">Custom color</label>
+                                <input type="color" id="custom-bg-color" value="#ffffff"
+                                    class="color-picker-input cursor-pointer">
+                                <span id="custom-color-hex" class="text-xs font-mono text-white/30">#ffffff</span>
+                            </div>
+                        </div>
+
+                        <!-- Quantity -->
+                        <div class="glass-panel rounded-3xl p-5">
+                            <h3 class="font-display font-700 mb-4">Quantity on Sheet</h3>
+                            <div class="grid grid-cols-4 gap-2" id="qty-selector">
+                                <button data-qty="2"
+                                    class="qty-btn rounded-xl py-2.5 text-sm font-semibold transition-all">2</button>
+                                <button data-qty="4"
+                                    class="qty-btn active rounded-xl py-2.5 text-sm font-semibold transition-all">4</button>
+                                <button data-qty="6"
+                                    class="qty-btn rounded-xl py-2.5 text-sm font-semibold transition-all">6</button>
+                                <button data-qty="8"
+                                    class="qty-btn rounded-xl py-2.5 text-sm font-semibold transition-all">8</button>
+                                <button data-qty="10"
+                                    class="qty-btn rounded-xl py-2.5 text-sm font-semibold transition-all">10</button>
+                                <button data-qty="12"
+                                    class="qty-btn rounded-xl py-2.5 text-sm font-semibold transition-all">12</button>
+                                <button data-qty="16"
+                                    class="qty-btn rounded-xl py-2.5 text-sm font-semibold transition-all">16</button>
+                                <button data-qty="20"
+                                    class="qty-btn rounded-xl py-2.5 text-sm font-semibold transition-all">20</button>
+                            </div>
+                        </div>
+
+                        <!-- Border -->
+                        <div class="glass-panel rounded-3xl p-5">
+                            <h3 class="font-display font-700 mb-4">Border</h3>
+                            <div class="flex items-center gap-3">
+                                <label class="text-xs text-white/50 w-16 shrink-0">Width</label>
+                                <input type="range" id="border-width" min="0" max="8" value="2" class="slider flex-1">
+                                <span id="border-width-val"
+                                    class="text-xs font-mono text-white/40 w-6 text-right">2</span>
+                            </div>
+                            <div class="flex items-center gap-3 mt-3">
+                                <label class="text-xs text-white/50 w-16 shrink-0">Color</label>
+                                <input type="color" id="border-color" value="#000000"
+                                    class="color-picker-input cursor-pointer">
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="space-y-3">
+                            <button id="download-btn"
+                                class="w-full accent-btn py-3.5 rounded-2xl font-display font-700 text-base flex items-center justify-center gap-2">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"
+                                    viewBox="0 0 24 24">
+                                    <path
+                                        d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                </svg>
+                                Download Sheet
+                            </button>
+                            <button id="share-btn"
+                                class="w-full glass-btn py-3.5 rounded-2xl font-display font-600 text-base flex items-center justify-center gap-2 text-white/80 hover:text-white transition-all">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+                                    viewBox="0 0 24 24">
+                                    <path
+                                        d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+                                </svg>
+                                Share
+                            </button>
+                            <button id="save-history-btn"
+                                class="w-full glass-btn py-3 rounded-2xl text-sm font-medium flex items-center justify-center gap-2 text-white/60 hover:text-white/90 transition-all">
+                                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"
+                                    viewBox="0 0 24 24">
+                                    <path
+                                        d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+                                </svg>
+                                Save to History
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div><!-- /app -->
+
+    <!-- ════════════════════════════════════════════
+       MODALS
+  ════════════════════════════════════════════ -->
+
+    <!-- Download Modal -->
+    <div id="download-modal" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="modal-bg"></div>
+        <div class="modal-panel glass-panel rounded-3xl p-8 w-full max-w-sm relative z-10">
+            <button class="modal-close absolute top-4 right-4 icon-btn">✕</button>
+            <h3 class="font-display font-700 text-xl mb-6">Download As</h3>
+            <div class="grid grid-cols-2 gap-3">
+                <button class="dl-format-btn rounded-2xl py-4 text-center font-semibold" data-fmt="png">
+                    <div class="text-2xl mb-1">🖼️</div>PNG
+                </button>
+                <button class="dl-format-btn rounded-2xl py-4 text-center font-semibold" data-fmt="jpg">
+                    <div class="text-2xl mb-1">📷</div>JPG
+                </button>
+                <button class="dl-format-btn rounded-2xl py-4 text-center font-semibold" data-fmt="jpeg">
+                    <div class="text-2xl mb-1">🗜️</div>JPEG
+                </button>
+                <button class="dl-format-btn rounded-2xl py-4 text-center font-semibold" data-fmt="pdf">
+                    <div class="text-2xl mb-1">📄</div>PDF
+                </button>
+            </div>
+            <p class="text-center text-white/30 text-xs mt-5">High resolution · Print ready · A4 sheet</p>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="history-modal" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="modal-bg"></div>
+        <div class="modal-panel glass-panel rounded-3xl p-6 w-full max-w-lg relative z-10 max-h-[80vh] flex flex-col">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="font-display font-700 text-xl">History</h3>
+                <div class="flex items-center gap-3">
+                    <button id="clear-history-btn"
+                        class="text-xs text-red-400/70 hover:text-red-400 transition-colors">Clear All</button>
+                    <button class="modal-close icon-btn">✕</button>
+                </div>
+            </div>
+            <div id="history-list" class="flex-1 overflow-y-auto space-y-3 pr-1 custom-scroll"></div>
+            <div id="history-empty"
+                class="hidden flex-1 flex flex-col items-center justify-center text-white/30 text-sm py-10">
+                <div class="text-4xl mb-3">🕓</div>
+                <p>No history yet</p>
+                <p class="text-xs mt-1">Save photos to see them here</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+        <div class="relative z-10 text-center">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p id="loading-text" class="text-white/80 font-medium">Removing background…</p>
+            <p class="text-white/40 text-sm mt-1">This may take a moment</p>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+        <div class="toast-inner glass-panel rounded-2xl px-5 py-3 flex items-center gap-3 shadow-2xl">
+            <span id="toast-icon" class="text-lg">✓</span>
+            <span id="toast-text" class="text-sm font-medium text-white/90"></span>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+    <script src="security.js"></script>
+</body>
+
+</html>
