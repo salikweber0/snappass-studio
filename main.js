@@ -253,6 +253,16 @@ els.dropZone.addEventListener('click', (e) => {
  * @param {File} file
  */
 function handleFile(file) {
+  // ── Subscription check before processing ──
+  if (typeof getSubInfo === 'function') {
+    const subInfo = getSubInfo();
+    if (!subInfo.isActive) {
+      showToast('Subscription expired. Renew to upload photos.', 'error');
+      if (typeof openDevPanel === 'function') openDevPanel();
+      return; // Block upload
+    }
+  }
+
   const reader = new FileReader();
   reader.onload = (ev) => {
     const img = new Image();
