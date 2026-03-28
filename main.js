@@ -253,16 +253,6 @@ els.dropZone.addEventListener('click', (e) => {
  * @param {File} file
  */
 function handleFile(file) {
-  // ── Subscription check before processing ──
-  if (typeof getSubInfo === 'function') {
-    const subInfo = getSubInfo();
-    if (!subInfo.isActive) {
-      showToast('Subscription expired. Renew to upload photos.', 'error');
-      if (typeof openDevPanel === 'function') openDevPanel();
-      return; // Block upload
-    }
-  }
-
   const reader = new FileReader();
   reader.onload = (ev) => {
     const img = new Image();
@@ -1642,15 +1632,780 @@ const scheduleRender = () => {
 });
 
 /* ══════════════════════════════════════════════
+   SLIDER TRACK FILL — colored progress
+══════════════════════════════════════════════ */
+function updateSliderTrack(slider) {
+  const min = parseFloat(slider.min) || 0;
+  const max = parseFloat(slider.max) || 100;
+  const val = parseFloat(slider.value) || 0;
+  const pct = ((val - min) / (max - min)) * 100;
+  slider.style.setProperty('--val', pct + '%');
+}
+
+function initSliderTracks() {
+  const brightSlider = els.brightnessSlider;
+  const contrastSlider = els.contrastSlider;
+  const satSlider = els.saturationSlider;
+  const borderSlider = els.borderWidthInput;
+
+  if (brightSlider)  { brightSlider.classList.add('brightness-track');  updateSliderTrack(brightSlider); }
+  if (contrastSlider){ contrastSlider.classList.add('contrast-track');   updateSliderTrack(contrastSlider); }
+  if (satSlider)     { satSlider.classList.add('saturation-track');      updateSliderTrack(satSlider); }
+  if (borderSlider)  { borderSlider.classList.add('border-track');       updateSliderTrack(borderSlider); }
+
+  [brightSlider, contrastSlider, satSlider, borderSlider].forEach(sl => {
+    if (!sl) return;
+    sl.addEventListener('input', () => updateSliderTrack(sl));
+  });
+}
+
+/* ══════════════════════════════════════════════
+   RIPPLE EFFECT — on buttons
+══════════════════════════════════════════════ */
+function addRipple(e) {
+  const btn = e.currentTarget;
+  const rect = btn.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height);
+  const x = e.clientX - rect.left - size / 2;
+  const y = e.clientY - rect.top  - size / 2;
+
+  const ripple = document.createElement('span');
+  ripple.classList.add('ripple-effect');
+  ripple.style.cssText = `width:${size}px;height:${size}px;left:${x}px;top:${y}px;`;
+  btn.appendChild(ripple);
+  ripple.addEventListener('animationend', () => ripple.remove());
+}
+
+function initRipples() {
+  document.querySelectorAll('.accent-btn, .glass-btn, .qty-btn, .dl-format-btn').forEach(btn => {
+    if (getComputedStyle(btn).position === 'static') btn.style.position = 'relative';
+    btn.style.overflow = 'hidden';
+    btn.addEventListener('click', addRipple);
+  });
+}
+
+/* ══════════════════════════════════════════════
+   MAGNETIC HOVER — subtle cursor attraction
+══════════════════════════════════════════════ */
+function initMagneticButtons() {
+  document.querySelectorAll('.accent-btn').forEach(btn => {
+    btn.addEventListener('mousemove', (e) => {
+      const rect = btn.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top  + rect.height / 2;
+      const dx = (e.clientX - cx) * 0.12;
+      const dy = (e.clientY - cy) * 0.12;
+      btn.style.transform = `translate(${dx}px, ${dy}px) translateY(-3px) scale(1.02)`;
+    });
+    btn.addEventListener('mouseleave', () => {
+      btn.style.transform = '';
+    });
+  });
+}
+
+/* ══════════════════════════════════════════════
+   PANEL ENTRANCE — stagger animate panels
+══════════════════════════════════════════════ */
+function animatePanelsIn() {
+  const panels = document.querySelectorAll('#editor-section .glass-panel');
+  panels.forEach((panel, i) => {
+    panel.style.opacity = '0';
+    panel.style.transform = 'translateY(20px)';
+    setTimeout(() => {
+      panel.style.transition = 'opacity 0.5s ease, transform 0.5s cubic-bezier(0.16,1,0.3,1)';
+      panel.style.opacity = '';
+      panel.style.transform = '';
+    }, 80 + i * 60);
+  });
+}
+
+/* ══════════════════════════════════════════════
    INIT
 ══════════════════════════════════════════════ */
-// Ensure welcome screen plays properly
 document.addEventListener('DOMContentLoaded', () => {
   // Stagger orbs
   document.querySelectorAll('.welcome-orb').forEach((orb, i) => {
     orb.style.animationDelay = `${i * -2}s`;
   });
+
+  // Init slider tracks
+  initSliderTracks();
+
+  // Init ripple effects
+  initRipples();
+
+  // Init magnetic buttons
+  initMagneticButtons();
 });
+
+// Animate editor panels when they appear
+const editorObserver = new MutationObserver((mutations) => {
+  mutations.forEach(m => {
+    if (m.type === 'attributes' && m.attributeName === 'class') {
+      const target = m.target;
+      if (target.id === 'editor-section' && !target.classList.contains('hidden')) {
+        animatePanelsIn();
+      }
+    }
+  });
+});
+if (document.getElementById('editor-section')) {
+  editorObserver.observe(document.getElementById('editor-section'), { attributes: true });
+}
 
 console.log('%c SnapPass · Passport Photo Generator ', 'background:#6366f1;color:white;padding:4px 8px;border-radius:4px;font-family:monospace');
 console.log('%c Built with Canvas API · No backend required ', 'color:#818cf8;font-family:monospace');
+
+/* ══════════════════════════════════════════════
+   ABOUT DEVELOPER PANEL
+══════════════════════════════════════════════ */
+(function () {
+  const overlay  = document.getElementById('about-dev-overlay');
+  const panel    = document.getElementById('about-dev-panel');
+  const openBtn  = document.getElementById('about-dev-btn');
+  const closeBtn = document.getElementById('close-about-btn');
+  const backdrop = document.getElementById('about-dev-backdrop');
+
+  function openAbout() {
+    overlay.classList.remove('hidden');
+    requestAnimationFrame(() => requestAnimationFrame(() => panel.classList.add('open')));
+    document.body.style.overflow = 'hidden';
+    Audio && Audio.click && Audio.click();
+  }
+  function closeAbout() {
+    panel.classList.remove('open');
+    setTimeout(() => { overlay.classList.add('hidden'); document.body.style.overflow = ''; }, 450);
+  }
+
+  if (openBtn)  openBtn.addEventListener('click', openAbout);
+  if (closeBtn) closeBtn.addEventListener('click', closeAbout);
+  if (backdrop) backdrop.addEventListener('click', closeAbout);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAbout(); });
+})();
+
+/* ══════════════════════════════════════════════
+   FOOTER — show with app
+══════════════════════════════════════════════ */
+(function () {
+  const footer = document.getElementById('app-footer');
+  const appEl  = document.getElementById('app');
+  if (!footer || !appEl) return;
+  const obs = new MutationObserver(() => {
+    if (!appEl.classList.contains('hidden')) footer.classList.remove('hidden');
+  });
+  obs.observe(appEl, { attributes: true, attributeFilter: ['class'] });
+})();
+
+
+/* ══════════════════════════════════════════════
+   ACCOUNT & AUTH SYSTEM
+══════════════════════════════════════════════ */
+
+// ── Google Apps Script endpoints ─────────────
+const APPS_SCRIPT = {
+  // Replace with your deployed Apps Script URL
+  url: 'https://script.google.com/macros/s/AKfycbwa926lZdRvdayffC3n7CS--r8k_aKdoU-_q2KcDdKeZWOo5ITPA3wIMJKFe0hN0d6vww/exec'
+};
+
+// ── Razorpay Key (replace with real key) ─────
+const RAZORPAY_KEY = 'rzp_test_xxxxxx';
+
+// ── LocalStorage keys ─────────────────────────
+const STORAGE = {
+  user:           'snappass_user',
+  startDate:      'snappass_trial_start',
+  lastUsedDate:   'snappass_last_used',
+  subPlan:        'snappass_sub_plan',
+  subStart:       'snappass_sub_start',
+  subExpiry:      'snappass_sub_expiry',
+  sessionUnlocked:'snappass_session_2'
+};
+
+// ── Helpers ───────────────────────────────────
+function getUser()       { try { return JSON.parse(localStorage.getItem(STORAGE.user)); } catch(_){ return null; } }
+function saveUser(u)     { localStorage.setItem(STORAGE.user, JSON.stringify(u)); }
+function getSubExpiry()  { return localStorage.getItem(STORAGE.subExpiry) || null; }
+function getSubPlan()    { return localStorage.getItem(STORAGE.subPlan) || null; }
+function getSubStart()   { return localStorage.getItem(STORAGE.subStart) || null; }
+function getTrialStart() { return localStorage.getItem(STORAGE.startDate) || null; }
+function getLastUsed()   { return localStorage.getItem(STORAGE.lastUsedDate) || null; }
+
+function todayISO() {
+  return new Date().toISOString().split('T')[0];
+}
+function parseDate(s) {
+  return s ? new Date(s + 'T00:00:00') : null;
+}
+function addDays(dateStr, days) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  const d = parseDate(dateStr);
+  return d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+// ── Date anti-cheat ───────────────────────────
+function isDateTampered() {
+  const last = getLastUsed();
+  if (!last) return false;
+  const today = todayISO();
+  // If today is BEFORE last used date → possible date rollback
+  return today < last;
+}
+
+function updateLastUsed() {
+  localStorage.setItem(STORAGE.lastUsedDate, todayISO());
+}
+
+// ── Trial status ──────────────────────────────
+function getTrialStatus() {
+  const start = getTrialStart();
+  if (!start) return { active: false, expired: false, daysLeft: 0 };
+  const today = todayISO();
+  const trialEnd = addDays(start, 3);
+  if (today <= trialEnd) {
+    const d = parseDate(trialEnd);
+    const t = parseDate(today);
+    const daysLeft = Math.max(0, Math.round((d - t) / 86400000));
+    return { active: true, expired: false, daysLeft, trialEnd };
+  }
+  return { active: false, expired: true, daysLeft: 0, trialEnd };
+}
+
+// ── Subscription status ───────────────────────
+function getSubStatus() {
+  const expiry = getSubExpiry();
+  if (!expiry) return { active: false, expired: false };
+  const today = todayISO();
+  if (today <= expiry) {
+    const d = parseDate(expiry);
+    const t = parseDate(today);
+    const daysLeft = Math.max(0, Math.round((d - t) / 86400000));
+    return { active: true, expired: false, daysLeft, expiry, plan: getSubPlan(), start: getSubStart() };
+  }
+  return { active: false, expired: true, expiry, plan: getSubPlan(), start: getSubStart() };
+}
+
+// ── Can use BG removal? ───────────────────────
+function canUseBgRemoval() {
+  if (isDateTampered()) return false;
+  const sub = getSubStatus();
+  if (sub.active) return true;
+  const trial = getTrialStatus();
+  return trial.active;
+}
+
+// ── Google Apps Script helpers ────────────────
+async function postToSheet(data) {
+  try {
+    await fetch(APPS_SCRIPT.url, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+  } catch(e) { console.warn('Apps Script post failed:', e); }
+}
+
+// ── Send email via Apps Script ─────────────────
+async function sendEmail(to, subject, body) {
+  await postToSheet({ action: 'sendEmail', to, subject, body });
+}
+
+// ── Save user to Sheet1 ───────────────────────
+async function saveUserToSheet(user) {
+  await postToSheet({
+    action: 'createUser',
+    sheet: 'Sheet1',
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    createdAt: todayISO()
+  });
+}
+
+// ── Save/update subscription to Sheet2 ────────
+async function saveSubToSheet(email, plan, startDate, endDate) {
+  await postToSheet({
+    action: 'upsertSubscription',
+    sheet: 'Sheet2',
+    email,
+    plan,
+    startDate,
+    endDate
+  });
+}
+
+// ── Update BG removal button state ────────────
+function updateBgRemovalState() {
+  const btn = document.getElementById('remove-bg-btn');
+  const container = btn && btn.closest('.space-y-4');
+  if (!btn) return;
+
+  // Remove existing locked overlay if any
+  const existingOverlay = document.getElementById('bg-locked-overlay');
+  if (existingOverlay) existingOverlay.remove();
+
+  if (canUseBgRemoval()) {
+    btn.disabled = false;
+    btn.classList.remove('bg-removal-locked');
+    btn.style.opacity = '';
+    btn.style.pointerEvents = '';
+  } else {
+    btn.disabled = true;
+    btn.classList.add('bg-removal-locked');
+
+    // Show locked message
+    const overlay = document.createElement('div');
+    overlay.id = 'bg-locked-overlay';
+    overlay.className = 'bg-removal-locked-overlay';
+
+    if (isDateTampered()) {
+      overlay.innerHTML = '<p>🔒 Date tampering detected. Please set correct date to continue.</p>';
+    } else {
+      const trial = getTrialStatus();
+      if (trial.expired) {
+        overlay.innerHTML = '<p>🔒 Free trial ended. <button onclick="openSubModal()" style="color:#a78bfa;font-weight:600;text-decoration:underline;background:none;border:none;cursor:pointer;">Subscribe to unlock</button></p>';
+      } else {
+        overlay.innerHTML = '<p>🔒 Subscribe to use AI Background Removal</p>';
+      }
+    }
+    if (container) container.appendChild(overlay);
+  }
+}
+
+// ── Open subscription modal ───────────────────
+function openSubModal() {
+  const overlay = document.getElementById('subscription-overlay');
+  if (overlay) {
+    overlay.classList.remove('hidden');
+    refreshSubModal();
+  }
+}
+
+// ── Refresh subscription modal UI ─────────────
+function refreshSubModal() {
+  const trial = getTrialStatus();
+  const sub = getSubStatus();
+  const trialBanner = document.getElementById('sub-trial-banner');
+  const trialText = document.getElementById('sub-trial-text');
+  const activInfo = document.getElementById('active-sub-info');
+  const expiredInfo = document.getElementById('expired-sub-info');
+  const plans = document.getElementById('subscription-plans');
+  const subBtn = document.getElementById('subscribe-btn');
+  const activeNote = document.getElementById('sub-active-note');
+
+  // Trial banner
+  if (trialText) {
+    if (isDateTampered()) {
+      trialText.textContent = '⚠️ Date tampering detected';
+      trialBanner.style.background = 'rgba(239,68,68,0.1)';
+      trialBanner.style.border = '1px solid rgba(239,68,68,0.25)';
+      trialText.style.color = '#fca5a5';
+    } else if (sub.active) {
+      trialText.textContent = '✅ Your subscription is active';
+      trialBanner.style.background = 'rgba(16,185,129,0.08)';
+      trialBanner.style.border = '1px solid rgba(16,185,129,0.25)';
+      trialText.style.color = '#6ee7b7';
+    } else if (trial.active) {
+      trialText.textContent = `🎁 Free Trial: ${trial.daysLeft} day${trial.daysLeft !== 1 ? 's' : ''} remaining`;
+      trialBanner.style.background = 'rgba(99,102,241,0.1)';
+      trialBanner.style.border = '1px solid rgba(99,102,241,0.2)';
+      trialText.style.color = '#a5b4fc';
+    } else {
+      trialText.textContent = '⏰ Free trial has ended';
+      trialBanner.style.background = 'rgba(239,68,68,0.08)';
+      trialBanner.style.border = '1px solid rgba(239,68,68,0.2)';
+      trialText.style.color = '#fca5a5';
+    }
+  }
+
+  // Active sub info
+  if (sub.active) {
+    activInfo && activInfo.classList.remove('hidden');
+    expiredInfo && expiredInfo.classList.add('hidden');
+    const planNames = { '1month': '1 Month', '6months': '6 Months' };
+    document.getElementById('active-plan-name') && (document.getElementById('active-plan-name').textContent = planNames[sub.plan] || sub.plan);
+    document.getElementById('active-start-date') && (document.getElementById('active-start-date').textContent = formatDate(sub.start));
+    document.getElementById('active-end-date') && (document.getElementById('active-end-date').textContent = formatDate(sub.expiry));
+    document.getElementById('active-days-remaining') && (document.getElementById('active-days-remaining').textContent = `${sub.daysLeft} days`);
+
+    // Disable plans when active
+    document.querySelectorAll('.sub-plan-card').forEach(c => c.classList.add('disabled-plan'));
+    if (subBtn) { subBtn.textContent = 'Active — Cannot purchase'; subBtn.classList.add('opacity-40','pointer-events-none'); subBtn.disabled = true; }
+    if (activeNote) activeNote.classList.remove('hidden');
+  } else {
+    activInfo && activInfo.classList.add('hidden');
+    if (sub.expired && sub.expiry) {
+      expiredInfo && expiredInfo.classList.remove('hidden');
+      const expText = document.getElementById('expired-sub-date');
+      if (expText) expText.textContent = `Subscription ended on ${formatDate(sub.expiry)}`;
+    } else {
+      expiredInfo && expiredInfo.classList.add('hidden');
+    }
+    document.querySelectorAll('.sub-plan-card').forEach(c => c.classList.remove('disabled-plan'));
+    if (subBtn) { subBtn.textContent = 'Select a Plan to Continue'; subBtn.classList.add('opacity-40','pointer-events-none'); subBtn.disabled = true; }
+    if (activeNote) activeNote.classList.add('hidden');
+  }
+}
+
+// ── Razorpay payment ──────────────────────────
+function initiatePayment(plan, priceINR, amountPaise) {
+  const user = getUser();
+  if (!user) { showToast('Please login first', 'error'); return; }
+
+  const planNames = { '1month': '1 Month', '6months': '6 Months' };
+  const planDays  = { '1month': 30,         '6months': 183 };
+
+  const options = {
+    key: RAZORPAY_KEY,
+    amount: amountPaise,
+    currency: 'INR',
+    name: 'SnapPass',
+    description: `${planNames[plan]} Subscription`,
+    prefill: {
+      name:  user.name,
+      email: user.email,
+      contact: user.phone
+    },
+    theme: { color: '#6366f1' },
+    modal: { ondismiss: () => showToast('Payment cancelled', 'info') },
+    handler: async function(response) {
+      showLoading('Activating subscription…');
+      const today = todayISO();
+      const endDate = addDays(today, planDays[plan]);
+
+      // Save locally
+      localStorage.setItem(STORAGE.subPlan,   plan);
+      localStorage.setItem(STORAGE.subStart,  today);
+      localStorage.setItem(STORAGE.subExpiry, endDate);
+
+      // Save to Sheet2
+      await saveSubToSheet(user.email, planNames[plan], today, endDate);
+
+      // Send confirmation email
+      await sendEmail(
+        user.email,
+        'SnapPass Subscription Activated',
+        `Hi ${user.name},
+
+Your SnapPass subscription is now active for ${planNames[plan]}.
+
+Plan: ${planNames[plan]}
+Start: ${formatDate(today)}
+Expiry: ${formatDate(endDate)}
+
+Thank you!
+SnapPass Team`
+      );
+
+      hideLoading();
+      updateBgRemovalState();
+      updateSubStatusLabel();
+      refreshSubModal();
+
+      // Close modal
+      const overlay = document.getElementById('subscription-overlay');
+      if (overlay) overlay.classList.add('hidden');
+
+      showToast(`🎉 Subscription activated for ${planNames[plan]}!`, 'success');
+    }
+  };
+
+  try {
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+  } catch(e) {
+    hideLoading();
+    showToast('Payment gateway not loaded. Please refresh.', 'error');
+    console.error('Razorpay error:', e);
+  }
+}
+
+// ── Update subscription label in about panel ──
+function updateSubStatusLabel() {
+  const label = document.getElementById('sub-status-label');
+  if (!label) return;
+  const sub = getSubStatus();
+  const trial = getTrialStatus();
+  if (sub.active) {
+    label.textContent = `Active · ${sub.daysLeft} days left`;
+    label.style.color = '#6ee7b7';
+  } else if (trial.active) {
+    label.textContent = `Free trial · ${trial.daysLeft} days left`;
+    label.style.color = '#a5b4fc';
+  } else {
+    label.textContent = 'No active plan';
+    label.style.color = 'rgba(255,255,255,0.4)';
+  }
+}
+
+// ══════════════════════════════════════════════
+// MAIN AUTH FLOW
+// ══════════════════════════════════════════════
+(function initAuth() {
+  const createScreen   = document.getElementById('create-account-screen');
+  const returningScreen = document.getElementById('returning-login-screen');
+
+  // Check date tampering
+  if (isDateTampered()) {
+    // Still allow login but block BG removal
+    console.warn('Date tampering detected');
+  }
+
+  // Already unlocked this session?
+  if (sessionStorage.getItem(STORAGE.sessionUnlocked)) {
+    if (createScreen)   createScreen.remove();
+    if (returningScreen) returningScreen.remove();
+    updateLastUsed();
+    updateBgRemovalState();
+    updateSubStatusLabel();
+    showSupportBtn();
+    return;
+  }
+
+  const user = getUser();
+
+  function unlockApp() {
+    sessionStorage.setItem(STORAGE.sessionUnlocked, '1');
+    updateLastUsed();
+    updateBgRemovalState();
+    updateSubStatusLabel();
+    showSupportBtn();
+    [createScreen, returningScreen].forEach(s => {
+      if (!s) return;
+      s.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+      s.style.opacity = '0';
+      s.style.transform = 'scale(1.04)';
+      setTimeout(() => s.remove(), 520);
+    });
+  }
+
+  // ── CREATE ACCOUNT FLOW ──
+  if (!user) {
+    if (returningScreen) returningScreen.remove();
+    if (!createScreen) return;
+
+    const createBtn = document.getElementById('create-account-btn');
+    const errEl     = document.getElementById('acc-error');
+    const successEl = document.getElementById('acc-success');
+
+    if (createBtn) {
+      createBtn.addEventListener('click', async () => {
+        const name  = document.getElementById('acc-name')?.value.trim();
+        const email = document.getElementById('acc-email')?.value.trim();
+        const phone = document.getElementById('acc-phone')?.value.trim();
+        const pass  = document.getElementById('acc-password')?.value;
+
+        // Validation
+        if (!name || !email || !phone || !pass) {
+          if (errEl) { errEl.textContent = '✕ Please fill in all fields.'; errEl.classList.remove('hidden'); }
+          return;
+        }
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+          if (errEl) { errEl.textContent = '✕ Invalid email address.'; errEl.classList.remove('hidden'); }
+          return;
+        }
+        if (pass.length < 4) {
+          if (errEl) { errEl.textContent = '✕ Password must be at least 4 characters.'; errEl.classList.remove('hidden'); }
+          return;
+        }
+
+        if (errEl) errEl.classList.add('hidden');
+        createBtn.disabled = true;
+        createBtn.textContent = 'Creating account…';
+
+        // Save user locally
+        const userData = { name, email, phone, password: pass, createdAt: todayISO() };
+        saveUser(userData);
+
+        // Start free trial
+        localStorage.setItem(STORAGE.startDate, todayISO());
+        localStorage.setItem(STORAGE.lastUsedDate, todayISO());
+
+        // Save to Sheet1
+        await saveUserToSheet(userData);
+
+        // Send welcome email
+        await sendEmail(
+          email,
+          'Welcome to SnapPass!',
+          `Hi ${name},
+
+Your account has been created successfully.
+
+You have a 3-day free trial to explore SnapPass.
+
+⚠️ Note: This account works only on this device. If you delete the app, access will be lost permanently.
+
+Enjoy creating professional passport photos!
+
+SnapPass Team`
+        );
+
+        if (successEl) successEl.classList.remove('hidden');
+        setTimeout(() => unlockApp(), 1200);
+      });
+    }
+
+  } else {
+    // ── RETURNING USER LOGIN FLOW ──
+    if (createScreen) createScreen.remove();
+    if (!returningScreen) return;
+    returningScreen.classList.remove('hidden');
+
+    // Update welcome UI
+    const nameEl   = document.getElementById('login-welcome-name');
+    const statusEl = document.getElementById('login-trial-status');
+    const expiredBanner = document.getElementById('trial-expired-banner');
+    if (nameEl) nameEl.textContent = `Hi, ${user.name.split(' ')[0]}!`;
+
+    const trial = getTrialStatus();
+    const sub   = getSubStatus();
+    if (sub.active) {
+      if (statusEl) statusEl.textContent = `Subscription active · ${sub.daysLeft} days left`;
+    } else if (trial.active) {
+      if (statusEl) statusEl.textContent = `Free trial · ${trial.daysLeft} day${trial.daysLeft!==1?'s':''} remaining`;
+    } else {
+      if (statusEl) statusEl.textContent = 'Trial expired — subscribe to continue';
+      if (expiredBanner) expiredBanner.classList.remove('hidden');
+    }
+
+    const loginBtn  = document.getElementById('returning-login-btn');
+    const loginInput = document.getElementById('login-password-input');
+    const loginErr  = document.getElementById('returning-login-err');
+
+    function attemptLogin() {
+      const pw = loginInput?.value;
+      if (pw === user.password) {
+        if (loginErr) loginErr.classList.add('hidden');
+        unlockApp();
+      } else {
+        if (loginErr) loginErr.classList.remove('hidden');
+        if (loginInput) { loginInput.value = ''; loginInput.focus(); }
+      }
+    }
+
+    if (loginBtn)  loginBtn.addEventListener('click', attemptLogin);
+    if (loginInput) loginInput.addEventListener('keydown', e => { if (e.key === 'Enter') attemptLogin(); });
+  }
+})();
+
+// ── Show support button once app is visible ───
+function showSupportBtn() {
+  const wrap = document.getElementById('support-btn-wrap');
+  if (wrap) {
+    wrap.style.display = 'flex';
+    wrap.classList.add('flex');
+    wrap.classList.remove('hidden');
+  }
+}
+
+// ══════════════════════════════════════════════
+// SUPPORT PANEL
+// ══════════════════════════════════════════════
+(function initSupportPanel() {
+  const overlay   = document.getElementById('support-overlay');
+  const backdrop  = document.getElementById('support-backdrop');
+  const openBtn   = document.getElementById('open-support-btn');
+  const closeBtn  = document.getElementById('close-support-btn');
+  if (!overlay) return;
+
+  function open()  { overlay.classList.remove('hidden'); document.getElementById('support-panel').style.transform = 'translateX(0)'; }
+  function close() { overlay.classList.add('hidden'); }
+
+  if (openBtn)   openBtn.addEventListener('click', open);
+  if (closeBtn)  closeBtn.addEventListener('click', close);
+  if (backdrop)  backdrop.addEventListener('click', close);
+})();
+
+// ══════════════════════════════════════════════
+// SUBSCRIPTION MODAL LOGIC
+// ══════════════════════════════════════════════
+(function initSubModal() {
+  const overlay  = document.getElementById('subscription-overlay');
+  const closeBtn = document.getElementById('close-sub-modal');
+  const subBtn   = document.getElementById('subscribe-btn');
+  const openBtn  = document.getElementById('open-subscription-btn');
+
+  if (!overlay) return;
+
+  let selectedPlan = null, selectedPrice = null, selectedAmount = null;
+
+  // Open from about panel
+  if (openBtn) {
+    openBtn.addEventListener('click', () => {
+      // Close about panel first
+      const aboutOverlay = document.getElementById('about-dev-overlay');
+      if (aboutOverlay) aboutOverlay.classList.add('hidden');
+      openSubModal();
+    });
+  }
+
+  if (closeBtn) closeBtn.addEventListener('click', () => overlay.classList.add('hidden'));
+  overlay.addEventListener('click', e => { if (e.target === overlay || e.target.classList.contains('modal-bg')) overlay.classList.add('hidden'); });
+
+  // Plan selection
+  document.querySelectorAll('.sub-plan-card').forEach(card => {
+    card.addEventListener('click', () => {
+      if (card.classList.contains('disabled-plan')) return;
+      document.querySelectorAll('.sub-plan-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      selectedPlan   = card.dataset.plan;
+      selectedPrice  = card.dataset.price;
+      selectedAmount = parseInt(card.dataset.amount);
+
+      if (subBtn) {
+        subBtn.textContent = `Pay ₹${selectedPrice} – Subscribe`;
+        subBtn.disabled = false;
+        subBtn.classList.remove('opacity-40', 'pointer-events-none');
+      }
+    });
+  });
+
+  // Subscribe button
+  if (subBtn) {
+    subBtn.addEventListener('click', () => {
+      if (!selectedPlan) return;
+      const sub = getSubStatus();
+      if (sub.active) { showToast('You already have an active subscription', 'info'); return; }
+      overlay.classList.add('hidden');
+      initiatePayment(selectedPlan, selectedPrice, selectedAmount);
+    });
+  }
+})();
+
+// ══════════════════════════════════════════════
+// SECURITY — Right-click & DevTools detection
+// ══════════════════════════════════════════════
+(function initSecurity() {
+  // Disable right-click
+  document.addEventListener('contextmenu', e => e.preventDefault());
+
+  // Disable common keyboard shortcuts for devtools
+  document.addEventListener('keydown', e => {
+    if (
+      e.key === 'F12' ||
+      (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key)) ||
+      (e.ctrlKey && e.key === 'U')
+    ) {
+      e.preventDefault();
+      return false;
+    }
+  });
+
+  // Basic DevTools size detection
+  const threshold = 160;
+  function detectDevTools() {
+    const widthDiff  = window.outerWidth  - window.innerWidth;
+    const heightDiff = window.outerHeight - window.innerHeight;
+    if (widthDiff > threshold || heightDiff > threshold) {
+      console.clear();
+      console.log('%c⛔ DevTools Disabled', 'color:red;font-size:24px;font-weight:bold;');
+    }
+  }
+  setInterval(detectDevTools, 1000);
+})();
