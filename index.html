@@ -56,6 +56,73 @@
 <body class="font-body bg-[#0a0a0f] text-white overflow-x-hidden">
 
     <!-- ════════════════════════════════════════════
+       INTERNET WARNING BANNER (top red bar)
+  ════════════════════════════════════════════ -->
+    <div id="no-internet-banner" class="no-internet-banner hidden" role="alert">
+        <span class="no-internet-icon">⚠️</span>
+        <span id="no-internet-msg">Please check your internet connection to continue using SnapPass.</span>
+        <button class="no-internet-close" onclick="document.getElementById('no-internet-banner').classList.add('hidden')" aria-label="Close">✕</button>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+       CENTER MODALS (injected early so JS can reference them)
+  ════════════════════════════════════════════ -->
+
+    <!-- Upload blocked: device date mismatch -->
+    <div id="date-invalid-modal" class="center-warning-overlay hidden">
+        <div class="center-warning-panel">
+            <div class="center-warning-icon">📅</div>
+            <h3 class="center-warning-title">Device Date is Not Valid</h3>
+            <p class="center-warning-desc">Sorry, you can't upload any image or photo because the date of your device is not matching with the internet date. Please correct your device date and try again.</p>
+            <div class="center-warning-actions">
+                <button class="accent-btn px-6 py-2.5 rounded-xl font-semibold text-sm" onclick="document.getElementById('date-invalid-modal').classList.add('hidden');">OK, Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload blocked: free trial ended -->
+    <div id="trial-ended-modal" class="center-warning-overlay hidden">
+        <div class="center-warning-panel">
+            <div class="center-warning-icon">⏰</div>
+            <h3 class="center-warning-title">Your 3 Days Free Trial is Over</h3>
+            <p class="center-warning-desc">Your free trial period has ended. Please take a subscription to continue processing any image or photo.</p>
+            <div class="center-warning-actions">
+                <button class="accent-btn px-6 py-2.5 rounded-xl font-semibold text-sm" onclick="document.getElementById('trial-ended-modal').classList.add('hidden'); openSubModal();">View Plans</button>
+                <button class="glass-btn px-6 py-2.5 rounded-xl text-sm text-white/60" onclick="document.getElementById('trial-ended-modal').classList.add('hidden');">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trial still active warning when clicking subscription plan -->
+    <div id="trial-active-modal" class="center-warning-overlay hidden">
+        <div class="center-warning-panel">
+            <div class="center-warning-icon">🎁</div>
+            <h3 class="center-warning-title">Free Trial Subscription is Active</h3>
+            <p class="center-warning-desc">Your 3-day free trial is still running. You can subscribe to a paid plan once your trial period ends.</p>
+            <div class="center-warning-actions">
+                <button class="accent-btn px-6 py-2.5 rounded-xl font-semibold text-sm" onclick="document.getElementById('trial-active-modal').classList.add('hidden');">OK, Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password verify before payment -->
+    <div id="password-verify-modal" class="center-warning-overlay hidden">
+        <div class="center-warning-panel">
+            <div class="center-warning-icon">🔐</div>
+            <h3 class="center-warning-title">Verify Your Identity</h3>
+            <p class="center-warning-desc">Please enter your account password to continue with the payment.</p>
+            <div class="pw-verify-input-wrap">
+                <input type="password" id="pw-verify-input" placeholder="Enter your password" class="pw-verify-input" autocomplete="current-password" />
+            </div>
+            <p id="pw-verify-error" class="pw-verify-error hidden">❌ Password incorrect. Please try again.</p>
+            <div class="center-warning-actions">
+                <button class="accent-btn px-6 py-2.5 rounded-xl font-semibold text-sm" id="pw-verify-confirm-btn">Confirm &amp; Continue</button>
+                <button class="glass-btn px-6 py-2.5 rounded-xl text-sm text-white/60" onclick="document.getElementById('password-verify-modal').classList.add('hidden'); document.getElementById('pw-verify-input').value=''; document.getElementById('pw-verify-error').classList.add('hidden');">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════
        WELCOME SCREEN
   ════════════════════════════════════════════ -->
     <div id="welcome-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center">
@@ -652,9 +719,9 @@
                             <div class="contact-icon-wrap">📧</div>
                             <div class="flex-1 min-w-0">
                                 <p class="text-white/35 text-xs">Email</p>
-                                <p class="text-white text-xs font-medium truncate"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a9dac8c5c0c2dac1c8c0c2c19b9e91e9cec4c8c0c587cac6c4">[email&#160;protected]</a></p>
+                                <p class="text-white text-xs font-medium truncate"><a href="mailto:salikshaikh278@gmail.com">salikshaikh278@gmail.com</a></p>
                             </div>
-                            <a href="/cdn-cgi/l/email-protection#fe8d9f9297958d969f979596ccc9c6be99939f9792d09d9193" class="contact-cta-btn">
+                            <a href="mailto:salikshaikh278@gmail.com" class="contact-cta-btn">
                                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                                 </svg>
@@ -725,13 +792,158 @@
     </div>
 
     <!-- ════════════════════════════════════════════
+       SCROLL INTRO SCREEN
+  ════════════════════════════════════════════ -->
+    <div id="intro-screen" class="fixed inset-0 z-[90]" style="background:#0a0a0f;display:none;flex-direction:column;overflow:hidden;">
+      <div class="welcome-bg" style="opacity:0.6;"></div>
+      <div class="welcome-orb orb-1" style="opacity:0.4;"></div>
+      <div class="welcome-orb orb-2" style="opacity:0.3;"></div>
+
+      <!-- Progress bar -->
+      <div class="fixed top-0 left-0 right-0 h-0.5 z-10" style="background:rgba(255,255,255,0.06);">
+        <div id="intro-progress" style="height:100%;background:linear-gradient(90deg,#6366f1,#8b5cf6);width:0%;transition:width 0.4s ease;"></div>
+      </div>
+
+      <!-- Scroll container -->
+      <div id="intro-scroll" class="flex-1" style="overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;min-height:0;">
+
+        <!-- Section 1: About -->
+        <div class="intro-section min-h-screen flex items-center justify-center px-6 py-20">
+          <div class="max-w-lg text-center intro-animate">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8" style="background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.25);">
+              <div class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></div>
+              <span class="text-indigo-300 text-xs font-semibold tracking-widest uppercase">About SnapPass</span>
+            </div>
+            <h2 class="font-display font-800 text-4xl sm:text-5xl mb-6 leading-tight">
+              Professional Passport Photos<br/><span class="text-gradient">In Seconds</span>
+            </h2>
+            <p class="text-white/50 text-lg leading-relaxed mb-10">
+              SnapPass is a fully private, browser-based passport photo studio. Your photos never leave your device. No servers. No uploads. Just pure canvas magic.
+            </p>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="intro-stat-card rounded-2xl p-4">
+                <div class="text-3xl font-display font-800 text-gradient">100%</div>
+                <div class="text-white/40 text-xs mt-1">Private</div>
+              </div>
+              <div class="intro-stat-card rounded-2xl p-4">
+                <div class="text-3xl font-display font-800 text-gradient">Free</div>
+                <div class="text-white/40 text-xs mt-1">To Try</div>
+              </div>
+              <div class="intro-stat-card rounded-2xl p-4">
+                <div class="text-3xl font-display font-800 text-gradient">AI</div>
+                <div class="text-white/40 text-xs mt-1">Powered</div>
+              </div>
+            </div>
+            <div class="mt-12 flex justify-center">
+              <div class="intro-scroll-hint flex flex-col items-center gap-2 text-white/25 text-xs">
+                <span>Scroll to explore</span>
+                <div class="intro-scroll-arrow">↓</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Features -->
+        <div class="intro-section min-h-screen flex items-center justify-center px-6 py-20">
+          <div class="max-w-lg text-center intro-animate">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8" style="background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.25);">
+              <span class="text-purple-300 text-xs font-semibold tracking-widest uppercase">✨ Features</span>
+            </div>
+            <h2 class="font-display font-800 text-4xl sm:text-5xl mb-10 leading-tight">
+              Everything You<br/><span class="text-gradient">Need</span>
+            </h2>
+            <div class="space-y-3 text-left">
+              <div class="intro-feature-card rounded-2xl p-4 flex items-start gap-4">
+                <div class="intro-feature-icon">🤖</div>
+                <div>
+                  <p class="font-display font-700 text-white text-sm">AI Background Removal</p>
+                  <p class="text-white/40 text-xs mt-0.5">Powered by remove.bg · One click to professional</p>
+                </div>
+              </div>
+              <div class="intro-feature-card rounded-2xl p-4 flex items-start gap-4">
+                <div class="intro-feature-icon">🎨</div>
+                <div>
+                  <p class="font-display font-700 text-white text-sm">30+ Background Colors</p>
+                  <p class="text-white/40 text-xs mt-0.5">Passport-standard whites, blues, greens & custom</p>
+                </div>
+              </div>
+              <div class="intro-feature-card rounded-2xl p-4 flex items-start gap-4">
+                <div class="intro-feature-icon">📄</div>
+                <div>
+                  <p class="font-display font-700 text-white text-sm">Print-Ready A4 Sheet</p>
+                  <p class="text-white/40 text-xs mt-0.5">Up to 20 photos per sheet · PDF & image export</p>
+                </div>
+              </div>
+              <div class="intro-feature-card rounded-2xl p-4 flex items-start gap-4">
+                <div class="intro-feature-icon">🔒</div>
+                <div>
+                  <p class="font-display font-700 text-white text-sm">100% Private & Secure</p>
+                  <p class="text-white/40 text-xs mt-0.5">All processing happens on your device only</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Benefits -->
+        <div class="intro-section min-h-screen flex items-center justify-center px-6 py-20">
+          <div class="max-w-lg text-center intro-animate">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);">
+              <span class="text-emerald-300 text-xs font-semibold tracking-widest uppercase">💎 Benefits</span>
+            </div>
+            <h2 class="font-display font-800 text-4xl sm:text-5xl mb-10 leading-tight">
+              Why Choose<br/><span class="text-gradient">SnapPass?</span>
+            </h2>
+            <div class="grid grid-cols-2 gap-3 mb-10">
+              <div class="intro-benefit-card rounded-2xl p-4 text-left">
+                <div class="text-2xl mb-2">⚡</div>
+                <p class="font-display font-700 text-sm text-white">Lightning Fast</p>
+                <p class="text-white/40 text-xs mt-1">Photos ready in under 30 seconds</p>
+              </div>
+              <div class="intro-benefit-card rounded-2xl p-4 text-left">
+                <div class="text-2xl mb-2">💰</div>
+                <p class="font-display font-700 text-sm text-white">Save Money</p>
+                <p class="text-white/40 text-xs mt-1">vs ₹300+ at photo studios</p>
+              </div>
+              <div class="intro-benefit-card rounded-2xl p-4 text-left">
+                <div class="text-2xl mb-2">🌍</div>
+                <p class="font-display font-700 text-sm text-white">All Countries</p>
+                <p class="text-white/40 text-xs mt-1">Supports every passport format</p>
+              </div>
+              <div class="intro-benefit-card rounded-2xl p-4 text-left">
+                <div class="text-2xl mb-2">📱</div>
+                <p class="font-display font-700 text-sm text-white">Works Everywhere</p>
+                <p class="text-white/40 text-xs mt-1">Mobile, tablet & desktop</p>
+              </div>
+            </div>
+            <!-- Trial info -->
+            <div class="intro-trial-card rounded-2xl p-5 mb-8">
+              <div class="flex items-center justify-center gap-3 mb-3">
+                <span class="text-2xl">🎁</span>
+                <p class="font-display font-700 text-white text-lg">3-Day Free Trial</p>
+              </div>
+              <p class="text-white/50 text-sm">Try all features including AI Background Removal for free. No credit card required to start.</p>
+            </div>
+            <!-- Final CTA -->
+            <button id="intro-next-btn" class="w-full accent-btn py-4 rounded-2xl font-display font-700 text-lg flex items-center justify-center gap-2">
+              <span>Get Started — It's Free</span>
+              <span>→</span>
+            </button>
+            <p class="text-white/25 text-xs mt-4">Create your free account to begin</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════
        CREATE ACCOUNT SCREEN
   ════════════════════════════════════════════ -->
-    <div id="create-account-screen" class="fixed inset-0 z-[100] lock-screen-bg flex flex-col" style="overflow-y:auto;-webkit-overflow-scrolling:touch;">
+    <div id="create-account-screen" class="fixed inset-0 z-[100] lock-screen-bg flex-col" style="display:none;">
         <div class="lock-orb lock-orb-1"></div>
         <div class="lock-orb lock-orb-2"></div>
         <div class="lock-orb lock-orb-3"></div>
-        <div class="flex-1 flex items-center justify-center px-4 py-8">
+        <div class="flex-1 flex items-center justify-center px-4 py-4">
             <div class="w-full max-w-md">
                 <div class="lock-card-glass p-8 rounded-3xl">
                     <!-- Brand -->
@@ -791,7 +1003,7 @@
     <!-- ════════════════════════════════════════════
        RETURNING USER — LOGIN SCREEN
   ════════════════════════════════════════════ -->
-    <div id="returning-login-screen" class="fixed inset-0 z-[100] lock-screen-bg hidden flex flex-col" style="overflow-y:auto;-webkit-overflow-scrolling:touch;">
+    <div id="returning-login-screen" class="fixed inset-0 z-[100] lock-screen-bg flex-col" style="display:none;">
         <div class="lock-orb lock-orb-1"></div>
         <div class="lock-orb lock-orb-2"></div>
         <div class="lock-orb lock-orb-3"></div>
@@ -869,9 +1081,9 @@
                             <div class="contact-icon-wrap">📧</div>
                             <div class="flex-1 min-w-0">
                                 <p class="text-white/35 text-xs">Email Support</p>
-                                <p class="text-white text-xs font-medium">shaikhsalikwork@gmail.com</p>
+                                <p class="text-white text-xs font-medium"><a href="mailto:salikshaikh278@gmail.com">salikshaikh278@gmail.com</a></p>
                             </div>
-                            <a href="mailto:shaikhsalikwork@gmail.com" class="contact-cta-btn">Email</a>
+                            <a href="mailto:salikshaikh278@gmail.com" class="contact-cta-btn">Email</a>
                         </div>
                         <div class="contact-card contact-card-wa">
                             <div class="contact-icon-wrap contact-icon-wa">💬</div>
@@ -888,7 +1100,7 @@
                     <p class="text-white/30 text-xs font-semibold uppercase tracking-widest mb-2">Ideas & Feature Requests</p>
                     <div class="bg-white/5 border border-white/10 rounded-2xl p-4">
                         <p class="text-white/60 text-sm">💡 You can suggest new features via email</p>
-                        <p class="text-white/35 text-xs mt-2">Send your ideas to <span class="text-indigo-300">shaikhsalikwork@gmail.com</span> — we read every message!</p>
+                        <p class="text-white/35 text-xs mt-2">Send your ideas to <span class="text-indigo-300"><a href="mailto:salikshaikh278@gmail.com">salikshaikh278@gmail.com</a></span> — we read every message!</p>
                     </div>
                 </div>
                 <!-- App Info -->
@@ -1010,7 +1222,7 @@
                     </div>
                 </div>
                 <div class="text-center sm:text-right">
-                    <p class="text-white/30 text-sm">© 2025 <span class="text-white/60 font-medium">Shaikh Salik</span> · All rights reserved</p>
+                    <p class="text-white/30 text-sm">© 2026 <span class="text-white/60 font-medium">Shaikh Salik</span> · All rights reserved</p>
                     <p class="text-white/20 text-xs mt-1">Built with ❤</p>
         </div>
     </footer>
